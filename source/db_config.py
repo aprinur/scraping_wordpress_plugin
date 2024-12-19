@@ -1,9 +1,9 @@
 from sqlalchemy import Column, String, Integer, Float
-from __init__ import Base, engine
+from source import Base, engine, TABLE
 
 
 class Format_SQL(Base):
-    __tablename__ = 'Plugin_In_Wordpress'
+    __tablename__ = TABLE
 
     id = Column(Integer, primary_key=True)
     Name = Column(String, unique=True)

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Scraping_Wordpress_plugin.iml" filepath="$PROJECT_DIR$/.idea/Scraping_Wordpress_plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/scraping_wordpress_plugin.iml" filepath="$PROJECT_DIR$/.idea/scraping_wordpress_plugin.iml" />
     </modules>
   </component>
 </project>

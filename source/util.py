@@ -55,9 +55,13 @@ def user_input():
 
 
 def insert_to_db(result):
-    session.add(result)
-    session.commit()
-    print('Insert to db success')
+    try:
+        session.add(result)
+        session.commit()
+        print('Insert to db success')
+
+    except Exception as e:
+        print(f'Error {e}')
 
 
 def check_db(data):
@@ -69,7 +73,13 @@ def save_to_file(filename: str, sheet_title: str, sheet_desc: str):
     query = f'SELECT * FROM {TABLE}'
     df = pandas.read_sql_query(query, engine)
 
-    with pandas.ExcelWriter(f'{filename}_{DATE}.xlsx', engine='openpyxl') as writer:
+    save_dir = os.path.join(os.path.expanduser('~'), 'Downloads')
+    os.makedirs(save_dir, exist_ok=True)
+
+    excel_path = os.path.join(save_dir, f'{filename}_{DATE}.xlsx')
+    csv_path = os.path.join(save_dir, f'{filename}_{DATE}.csv')
+
+    with pandas.ExcelWriter(excel_path, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, startrow=3, sheet_name='Sheet_1')
         worksheet = writer.sheets['Sheet_1']
 
@@ -83,7 +93,7 @@ def save_to_file(filename: str, sheet_title: str, sheet_desc: str):
         worksheet['A2'].alignment = Alignment(horizontal='left', vertical='center')
         print(f'Saved to file as: {filename}')
 
-    df.to_csv(fr'D:\Github\aprinur\scraping_wordpress_plugin\{filename}_{DATE}.csv', index=False)
+    df.to_csv(csv_path, index=False)
 
 
 def file_checker(filename):

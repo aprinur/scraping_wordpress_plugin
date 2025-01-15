@@ -1,5 +1,5 @@
 from source.db_config import get_existing_table_class, create_db_table
-from source import session, engine, DATE, sql_reserved_keyword
+from source import Session, engine, DATE, sql_reserved_keyword
 from openpyxl.styles import Alignment, Font
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import inspect, text
@@ -10,7 +10,16 @@ import pandas
 import os
 
 
-def save_as_file_input(confirm: bool = True, tablename: str = None):
+def save_as_file_input(confirm: bool = True, tablename: str = None) -> str | None:
+    """ Function to get argument for export file from database table
+
+    Args:
+        confirm (bool): confirmation from the requesting function to save as file or not
+        tablename (str): name of table from database to export as xlsx and csv
+
+    Returns:
+        str | None
+    """
 
     while confirm:
         display_table()
@@ -34,7 +43,17 @@ def save_as_file_input(confirm: bool = True, tablename: str = None):
         return filename, sheet_title, sheet_desc, None
 
 
-def input_pages():
+def input_pages() -> tuple:
+    """ Getting certain parameter to scrape
+
+        Args: None
+
+        Returns:
+            tuple: A tuple containing:
+                - int: The number of pages to scrape.
+                - str: The name of the table.
+                - Type[WP_PLugins]: The class representing the existing table structure.
+    """
     while True:
         pages = input('Enter total page to scrape (empty = all): ') or '2949'
 
@@ -78,9 +97,18 @@ def input_pages():
             return pages, table_name, table_class
 
 
-def insert_to_db(result, table_class):
+def insert_to_db(result, table_class) -> None:
+    """Insert a new record into the database table.
+
+        Args:
+            result (dict): A dictionary containing the data to be inserted into the table.
+            table_class (Type[WP_PLugins]): The class representing the table structure where the data will be inserted.
+
+        Returns:
+            None: This function does not return a value. It prints a success message or an error message if an exception occurs.
+        """
     try:
-        with session:
+        with Session() as session:
             table_instance = table_class(**result)
             session.add(table_instance)
             session.commit()
@@ -90,13 +118,32 @@ def insert_to_db(result, table_class):
         print(f'Error {e}')
 
 
-def check_db(data, table_class):
-    with session:
+def check_db(data, table_class) -> bool:
+    """Check whether a specific value exists in a certain table.
+
+        Args:
+            data (dict): A dictionary containing the value to check, expected to have a "Name" key.
+            table_class (Type[WP_PLugins]): The class representing the table structure to query.
+
+        Returns:
+            bool: True if the value exists in the table, False otherwise.
+    """
+    with Session() as session:
         exist = session.query(table_class).filter_by(Name=data["Name"]).first()
         return exist is not None
 
 
-def save_to_file(filename: str, sheet_title: str, sheet_desc: str, table_name: str = None):
+def save_to_file(filename: str, sheet_title: str, sheet_desc: str, table_name: str = None) -> None:
+    """ Function to export table from database into xlsx and csv file
+
+        Args:
+            filename (str): name of exported file
+            sheet_title (str): title of the sheet from the file
+            sheet_desc (str): description of the sheet, placed under title
+            table_name (str): name of table from the database to export
+
+        Returns: None
+    """
     query = f'SELECT * FROM {table_name}'
     df = pandas.read_sql_query(query, engine)
 
@@ -136,7 +183,15 @@ def save_to_file(filename: str, sheet_title: str, sheet_desc: str, table_name: s
     return
 
 
-def table_name_validator(tablename):
+def table_name_validator(tablename: str) -> bool:
+    """ Function to validate value of tablename whether it is empty string,
+    not a valid identifier or a reserved keyword list in python or sql
+
+        Args:
+            tablename (str): name of table to validate
+
+        Returns: bool
+    """
     if not tablename.strip():
         print('Table name cannot be empty')
         return False
@@ -152,12 +207,27 @@ def table_name_validator(tablename):
     return True
 
 
-def check_table_exists(tablename: str, engine_=engine):
+def check_table_exists(tablename: str, engine_=engine) -> bool:
+    """ Function to check exsistance of a table inside database
+
+        Args:
+            tablename (str): tablename that might be inside database
+            engine_: an instance of SQLAlchemy's Engine
+
+        Returns: bool
+    """
+
     inspector = inspect(engine_)
     return tablename in inspector.get_table_names()
 
 
-def user_input_del_table():
+def user_input_del_table() -> str | bool:
+    """ Function to get table name to delete
+
+        arg: None
+
+        Returns: str | bool
+    """
     display_table()
 
     while True:
@@ -169,28 +239,35 @@ def user_input_del_table():
             print('Table not found')
             continue
 
-        return table
+        return table.strip()
 
 
-def del_table(table_name: str | bool):
+def delete_table_by_name(table_name: str) -> None:
+    """
+    Delete a table from WordPress_plugins.db database
 
+        Args:
+            table_name (str): name of table inside database to delete
+
+        Returns: None
+    """
     try:
-        if table_name:
-            while table_name.strip():
-                confirm_deletion = input('Are you sure want to delete the table y/n: ').lower()
-                if confirm_deletion not in ['y', 'n']:
-                    print('Enter y or n ')
-                    continue
-                if confirm_deletion == 'n':
-                    print('Operation canceled')
-                    return
-
-                with engine.connect() as connection:
-                    query = f'DROP TABLE IF EXISTS {table_name};'
-                    connection.execute(text(query))
-                    print(f'Table {table_name} deletion report\t: Sucess')
+        while table_name:
+            confirm_deletion = input('Are you sure want to delete the table y/n: ').lower()
+            if confirm_deletion not in ['y', 'n']:
+                print('Enter y or n ')
+                continue
+            if confirm_deletion == 'n':
+                print('Operation canceled')
                 return
+
+            with engine.connect() as connection:
+                query = text('DROP TABLE IF EXISTS :table_name')
+                connection.execute(text(query))
+                print(f'Table {table_name} deletion report\t: Sucess')
+            return
         return
+
     except SQLAlchemyError as e:
         print(f'''
         Table {table_name} deletion report\t: Failed
@@ -198,7 +275,13 @@ def del_table(table_name: str | bool):
         return
 
 
-def display_table():
+def display_table() -> None:
+    """ Display all table from database WordPress_plugins.db
+
+        Args: None
+
+        Returns: None
+    """
     try:
         with engine.connect():
             inspector = inspect(engine)

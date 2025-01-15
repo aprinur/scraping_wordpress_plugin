@@ -11,6 +11,12 @@ DATE = datetime.datetime.now().strftime('%d-%b-%Y_%H-%M-%S')
 
 
 def get_db_path():
+    """
+    Getting path to save the database
+
+    args: None
+    return: None
+    """
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(current_dir, 'WordPress_plugins.db')
@@ -36,7 +42,6 @@ engine = create_engine(DB_URL, echo=False)
 Base = declarative_base()
 
 Session = sessionmaker(bind=engine)
-session = Session()
 
 sql_reserved_keyword = {
     "select", "insert", "update", "delete", "from", "where", "join",

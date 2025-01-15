@@ -4,7 +4,15 @@ import time
 from source import API
 
 
-def scrape_api(page_number):
+def scrape_api(page_number: int):
+    """ Function to fetch data from requested API
+
+        Args:
+            page_number (int): number of page to get scraped
+
+        Returns:
+            list: a list contain dictionary of scraped data
+                    """
     query = f'from={page_number}&alg=marketplace:search/1&session_id=z3GlL5'
     encripted_query = base64.b64encode(query.encode()).decode()
     full_api = API.format(query=encripted_query)

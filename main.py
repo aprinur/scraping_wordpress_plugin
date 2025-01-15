@@ -1,8 +1,10 @@
-from source.util import input_pages, insert_to_db, check_db, save_to_file, save_as_file_input, user_input_del_table, del_table
+from source.util import input_pages, insert_to_db, check_db, save_to_file, save_as_file_input, user_input_del_table, delete_table_by_name
 from source.scrape import scrape_api
+import logging
 
 
 def scrape():
+    """ Merged function to scrape data and store it to database and export as xlsx and csv"""
     total_pages, tablename, table_class = input_pages()
 
     for i in range(0, total_pages * 20, 20):
@@ -33,6 +35,7 @@ def scrape():
 
 
 def export_to_file():
+    """ Merged function to export table from database"""
     try:
         save_to_file(*save_as_file_input())
     except Exception as e:
@@ -40,10 +43,12 @@ def export_to_file():
 
 
 def delete_table():
-    del_table(user_input_del_table())
+    """ Merged function to delete table from database"""
+    delete_table_by_name(user_input_del_table())
 
 
 def main_menu():
+    """ Main function """
     while True:
         options = input("""
 1. Scrape Plugins

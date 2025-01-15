@@ -1,76 +1,103 @@
-from source import session, engine, TABLE, DATE
-from source.db_config import Format_SQL
-from openpyxl import load_workbook
+from source.db_config import get_existing_table_class, create_db_table
+from source import session, engine, DATE, sql_reserved_keyword
 from openpyxl.styles import Alignment, Font
-import pandas
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import inspect, text
+from openpyxl import load_workbook
 import openpyxl
+import keyword
+import pandas
 import os
 
 
-def open_file(filename):
-    try:
-        with open(filename, 'r') as f:
-            parameters = f.read()
-            return parameters.split('\n')
-    except FileNotFoundError:
-        print('File not found')
-    except FileExistsError:
-        print('File corrupted')
+def save_as_file_input(confirm: bool = True, tablename: str = None):
+
+    while confirm:
+        display_table()
+        table_name = input('Enter table name: ')
+        if not table_name.strip():
+            print('Table name cannot be empty')
+            continue
+        if not check_table_exists(table_name):
+            print("Table name doesn't exist in the database, re enter the correct table name")
+            continue
+        filename = input('Enter file name (optional): ') or 'WordPress plugins'
+        sheet_title = input('Enter title for excel sheet (optional): ') or 'WordPress Plugin Scraping Result'
+        sheet_desc = input(
+            'Enter desc for excel sheet (optional): ') or f'This file exported from table {table_name} in the database'
+        return filename, sheet_title, sheet_desc, table_name
+
+    if not confirm:
+        filename = input('Enter file name (optional): ') or 'WordPress plugins'
+        sheet_title = input('Enter title for excel sheet (optional): ') or 'WordPress Plugin Scraping Result'
+        sheet_desc = input('Enter desc for excel sheet (optional): ') or f'This file exported from table {tablename} in the database'
+        return filename, sheet_title, sheet_desc, None
 
 
-def user_input():
+def input_pages():
     while True:
-        pages = input('Input total page to scrape (empty = all): ') or 2949
+        pages = input('Enter total page to scrape (empty = all): ') or '2949'
 
         if pages.isdigit():
-            total_pages = int(pages)
+            pages = int(pages)
         else:
             print('Page must be a number')
             continue
+        break
 
-        save_as_file_confirm = input('Save as csv and xlsx (y/n): ').lower()
+    while True:
+        table_name = input('Enter table name: ').lower()
+        valid = table_name_validator(table_name)
 
-        if save_as_file_confirm not in ['y', 'n']:
-            print('Choose only y or n')
+        if not valid:
+            print('Re-enter table name')
             continue
 
-        if save_as_file_confirm == 'y':
+        if check_table_exists(table_name):
             while True:
-                filename = input('Input filename: ')
-                if not filename:
-                    print('Filename cannot empty')
+                add = input('Table already exist, do you want to append data to the existing table (y/n): ').lower()
+                if add not in ['y', 'n']:
+                    print("Choose only y or n")
                     continue
 
-                if file_checker(f'{filename}_{DATE}.xlsx'):
-                    verif = input(f'File {filename}_{DATE}.xlsx already exist. Overwrite? (y/n):  ').lower()
-                    if verif != 'y':
-                        continue
-                break
-
-            sheet_title = input('Input title for excel sheet (optional): ') or 'Wordpress Plugin Scraping Result'
-            sheet_desc = input('Input desc for excel sheet (optional): ') or f'This file contain {total_pages*20} plugin from wordpress'
-            return total_pages, filename, sheet_title, sheet_desc
+                if add == 'y':
+                    try:
+                        table_class = get_existing_table_class(table_name)
+                        print(f'Appending data to the existing table: {table_name}.')
+                        return pages, table_name, table_class
+                    except ValueError as e:
+                        print(f'Error on get existing table: {e}')
+                        traceback.print_exc()
+                        return
+                else:
+                    print('Enter the new table name!')
+                    break
         else:
-            return total_pages, None, None, None
+            table_class = create_db_table(table_name)
+            print(f'Table {table_name} has created ')
+            return pages, table_name, table_class
 
 
-def insert_to_db(result):
+def insert_to_db(result, table_class):
     try:
-        session.add(result)
-        session.commit()
-        print('Insert to db success')
+        with session:
+            table_instance = table_class(**result)
+            session.add(table_instance)
+            session.commit()
+            print('Insert to db success')
 
     except Exception as e:
         print(f'Error {e}')
 
 
-def check_db(data):
-    exist = session.query(Format_SQL).filter_by(Name=data.Name).first()
-    return exist is not None
+def check_db(data, table_class):
+    with session:
+        exist = session.query(table_class).filter_by(Name=data["Name"]).first()
+        return exist is not None
 
 
-def save_to_file(filename: str, sheet_title: str, sheet_desc: str):
-    query = f'SELECT * FROM {TABLE}'
+def save_to_file(filename: str, sheet_title: str, sheet_desc: str, table_name: str = None):
+    query = f'SELECT * FROM {table_name}'
     df = pandas.read_sql_query(query, engine)
 
     save_dir = os.path.join(os.path.expanduser('~'), 'Downloads')
@@ -91,18 +118,93 @@ def save_to_file(filename: str, sheet_title: str, sheet_desc: str):
         worksheet['A1'].font = Font(name='Times New Roman', size=16, bold=True)
         worksheet['A1'].alignment = Alignment(horizontal='center', vertical='center')
         worksheet['A2'].alignment = Alignment(horizontal='left', vertical='center')
-        print(f'Saved to file as: {filename}')
+
+        for row in worksheet.iter_rows(min_col=1, max_col=1, min_row=4, max_row=worksheet.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        for row in worksheet.iter_rows(min_col=5, max_col=5, min_row=4, max_row=worksheet.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        for row in worksheet.iter_rows(min_col=6, max_col=6, min_row=4, max_row=worksheet.max_row):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='center', vertical='center')
 
     df.to_csv(csv_path, index=False)
+    print(f"\nSaved to file as: {filename}_{DATE}")
+    return
 
 
-def file_checker(filename):
-    exist = os.path.exists(filename)
-    return exist
+def table_name_validator(tablename):
+    if not tablename.strip():
+        print('Table name cannot be empty')
+        return False
+
+    if not tablename.isidentifier():
+        print('Table name must be a valid identifier')
+        return False
+
+    if tablename in keyword.kwlist or tablename.lower() in sql_reserved_keyword:
+        print(f"Table name '{tablename}' is a reserved keyword and cannot be used")
+        return False
+
+    return True
 
 
-def del_db(db_name):
+def check_table_exists(tablename: str, engine_=engine):
+    inspector = inspect(engine_)
+    return tablename in inspector.get_table_names()
+
+
+def user_input_del_table():
+    display_table()
+
+    while True:
+        table = input('\nEnter table name (empty = cancel): ')
+        if not table.strip():
+            print('Action aborted')
+            return False
+        if not check_table_exists(table):
+            print('Table not found')
+            continue
+
+        return table
+
+
+def del_table(table_name: str | bool):
+
     try:
-        os.remove(db_name)
-    except FileNotFoundError:
-        print(f"{db_name} not found")
+        if table_name:
+            while table_name.strip():
+                confirm_deletion = input('Are you sure want to delete the table y/n: ').lower()
+                if confirm_deletion not in ['y', 'n']:
+                    print('Enter y or n ')
+                    continue
+                if confirm_deletion == 'n':
+                    print('Operation canceled')
+                    return
+
+                with engine.connect() as connection:
+                    query = f'DROP TABLE IF EXISTS {table_name};'
+                    connection.execute(text(query))
+                    print(f'Table {table_name} deletion report\t: Sucess')
+                return
+        return
+    except SQLAlchemyError as e:
+        print(f'''
+        Table {table_name} deletion report\t: Failed
+        Error when deleting table\t: {e}''')
+        return
+
+
+def display_table():
+    try:
+        with engine.connect():
+            inspector = inspect(engine)
+            tables = inspector.get_table_names()
+            print('\nTables in WordPress_plugins.db')
+            for num, table in enumerate(tables):
+                print(f'{num + 1}. {table}')
+    except SQLAlchemyError as e:
+        print(f'Error while getting tables: {e}')

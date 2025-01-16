@@ -1,1 +1,50 @@
-This is program to scrape wordpress plugin via api along with the result inside database, csv and xlsx 
+# WordPress Plugins Scraper
+
+<br>
+
+## What kind of program is this ?
+<p> As written on the title, this is a program to scrape Plugins from WordPress.org</p>
+
+## How this program works?
+<p> This program works using WordPress API to fetch plugin data page by page, store it into sqlite database and export it into Excel and CSV file, exported file will automatically stored in "C:\Users\...\Downloads" folder. 
+This program will fetch name, release date, last update, number of rating, average rating and plugin link</p>
+
+## How to use this program?
+
+<p>1. You must have Python 3.8+ installed in your device</p>
+<p>2. Create venv (optional)</p>
+<p>3. Install requirements.txt</p>
+
+```
+pip install requirements.txt
+```
+<p>4. Run main.py</p>
+
+```
+main.py
+```
+
+## Feature
+
+<p> When main.py is running, you will find 4 options </p>
+1. Scrape Plugins
+<p> This is the option to choose if you want to scrape the plugin. This option will asking for amount of page to scrape and tabel name to store the data in database, 
+  and if you want to save it to Excel and CSV you'll need to fill certain parameters as in option 2</p>
+2. Export database into Excel and CSV
+<p> If you have already scrape and about to export the data you can choose this option. This option will asking for a few parameters</p>
+<ol>
+  1. Table name
+  <p> Tables from database will shown and you need to choose which table to export</p>
+  2. File name (optional)
+  <p> File name from the table to export, you can leave it empty and the code will fill it automatically</p>
+  3. Sheet title (optional)
+  <p> This is a title to be displayed on top of the seet when opening the file, if you leave it empty program will fill it automatically</p>
+  4. Sheet desc (optional)
+  <p> Sheet description will placed under the title, program will fill this form automatically if you leave it empty</p>
+
+</ol>
+
+3. Delete table
+<p> After exporting data from a table, you can delete a table from database in case you want to save some space in your device </p>
+4. Quit
+<p> Just like the name, it will stop the program</p>

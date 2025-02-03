@@ -11,7 +11,7 @@ This program will fetch name, release date, last update, number of rating, avera
 
 ## How to use this program?
 
-<p>1. You must have Python 3.8+ installed in your device</p>
+<p>1. You must have Python 3.8+ and sqlite database installed in your device</p>
 <p>2. Create venv (optional)</p>
 <p>3. Install requirements.txt</p>
 

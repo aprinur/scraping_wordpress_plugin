@@ -262,7 +262,7 @@ def delete_table_by_name(table_name: str) -> None:
                 return
 
             with engine.connect() as connection:
-                query = text('DROP TABLE IF EXISTS :table_name')
+                query = f'DROP TABLE {table_name}'
                 connection.execute(text(query))
                 print(f'Table {table_name} deletion report\t: Sucess')
             return

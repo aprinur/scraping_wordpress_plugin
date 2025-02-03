@@ -76,8 +76,3 @@ Enter option: """)
 
 if __name__ == '__main__':
     main_menu()
-
-
-"""
-test run
-"""

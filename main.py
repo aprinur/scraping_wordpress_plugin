@@ -1,6 +1,8 @@
 from source.util import input_pages, insert_to_db, check_db, save_to_file, save_as_file_input, user_input_del_table, delete_table_by_name
 from source.scrape import scrape_api
 import logging
+import random
+import time
 
 
 def scrape():
@@ -8,6 +10,7 @@ def scrape():
     total_pages, tablename, table_class = input_pages()
 
     for i in range(0, total_pages * 20, 20):
+        time.sleep(random.uniform(2, 5))
         results = scrape_api(i)
         if not results:
             print('No data available')

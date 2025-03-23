@@ -13,7 +13,7 @@ import os
 def save_as_file_input(confirm: bool = True, tablename: str = None) -> str | None:
     """ Function to get argument for export file from database table
 
-    Args:
+     Args:
         confirm (bool): confirmation from the requesting function to save as file or not
         tablename (str): name of table from database to export as xlsx and csv
 
